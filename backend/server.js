@@ -16,20 +16,20 @@ app.use('/api', apiRoutes);
 
 // Legacy route compatibility (for backward compatibility)
 const mockData = require('./mockData');
-app.get('/stocks', (req, res) => {
+app.get('/api/stocks', (req, res) => {
   res.json(mockData.stocks);
 });
-app.get('/stocks/:symbol', (req, res) => {
+app.get('/api/stocks/:symbol', (req, res) => {
   const stock = mockData.stocks.find(s => s.symbol.toLowerCase() === req.params.symbol.toLowerCase());
   if (!stock) {
     return res.status(404).json({ error: 'Stock not found' });
   }
   res.json(stock);
 });
-app.get('/crypto', (req, res) => {
+app.get('/api/crypto', (req, res) => {
   res.json(mockData.cryptocurrencies);
 });
-app.get('/crypto/:symbol', (req, res) => {
+app.get('/api/crypto/:symbol', (req, res) => {
   const crypto = mockData.cryptocurrencies.find(c => c.symbol.toLowerCase() === req.params.symbol.toLowerCase());
   if (!crypto) {
     return res.status(404).json({ error: 'Cryptocurrency not found' });
@@ -38,7 +38,7 @@ app.get('/crypto/:symbol', (req, res) => {
 });
 
 // Health check
-app.get('/health', (req, res) => {
+app.get('/api/health', (req, res) => {
   res.json({ 
     status: 'ok', 
     message: 'Zenith API is running',
