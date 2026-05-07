@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { getStocks, getCrypto } from "../services/api";
+
 import AssetsTable from "../components/AssetsTable";
 import FilterButtons from "../components/FilterButtons";
 import Loading from "../components/Loading";
@@ -19,11 +20,13 @@ const AssetsPage = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const stocksResponse = await getStocks();
-        const cryptoResponse = await getCrypto();
+        const [stocksRes, cryptoRes] = await Promise.all([
+          getStocks(),
+          getCrypto(),
+        ]);
 
-        setStocks(stocksResponse.data);
-        setCrypto(cryptoResponse.data);
+        setStocks(stocksRes?.data || []);
+        setCrypto(cryptoRes?.data || []);
       } catch (err) {
         console.error(err);
         setError("Failed to fetch assets. Please try again later.");
@@ -36,17 +39,18 @@ const AssetsPage = () => {
   }, []);
 
   const filteredAssets = () => {
-    let assetsList = [];
-    if (filter === "All") assetsList = [...stocks, ...crypto];
-    else if (filter === "Stocks") assetsList = stocks;
-    else if (filter === "Crypto") assetsList = crypto;
+    let list = [];
 
-    if (!searchTerm) return assetsList;
+    if (filter === "All") list = [...stocks, ...crypto];
+    else if (filter === "Stocks") list = stocks;
+    else if (filter === "Crypto") list = crypto;
 
-    return assetsList.filter(
-      (asset) =>
-        asset.symbol.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        asset.name.toLowerCase().includes(searchTerm.toLowerCase())
+    if (!searchTerm) return list;
+
+    return list.filter(
+      (a) =>
+        a?.symbol?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        a?.name?.toLowerCase().includes(searchTerm.toLowerCase())
     );
   };
 
@@ -55,49 +59,31 @@ const AssetsPage = () => {
     return <Error message={error} onRetry={() => window.location.reload()} />;
 
   return (
-    <div className="p-4 sm:p-6 space-y-6 bg-gray-50 dark:bg-gray-900 transition-colors duration-300 min-h-screen">
-      <h1 className="text-3xl sm:text-4xl font-bold mb-4 text-gray-900 dark:text-white">
-        📊 Assets
-      </h1>
+    <div className="p-4 sm:p-6 space-y-6 min-h-screen bg-gray-50 dark:bg-gray-900">
+      <h1 className="text-3xl font-bold">Assets</h1>
 
-      {/* Search Input */}
-      <div className="mb-4 w-full md:w-1/2">
-        <input
-          type="text"
-          placeholder="Search by symbol or name..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full p-2 border rounded-md 
-                     bg-white dark:bg-gray-800 
-                     text-gray-900 dark:text-gray-200 
-                     border-gray-300 dark:border-gray-700 
-                     placeholder-gray-400 dark:placeholder-gray-500
-                     focus:outline-none focus:ring-2 focus:ring-blue-500
-                     transition-colors duration-300"
+      <input
+        className="w-full md:w-1/2 p-2 border rounded"
+        placeholder="Search..."
+        value={searchTerm}
+        onChange={(e) => setSearchTerm(e.target.value)}
+      />
+
+      <FilterButtons currentFilter={filter} setFilter={setFilter} />
+
+      <AssetsTable
+        assets={filteredAssets()}
+        sortConfig={sortConfig}
+        setSortConfig={setSortConfig}
+        onRowClick={setSelectedAsset}
+      />
+
+      {selectedAsset && (
+        <AssetModal
+          asset={selectedAsset}
+          onClose={() => setSelectedAsset(null)}
         />
-      </div>
-
-      {/* Filter Buttons */}
-      <div className="flex flex-wrap md:flex-nowrap gap-2 md:gap-4">
-        <FilterButtons currentFilter={filter} setFilter={setFilter} />
-      </div>
-
-      {/* Assets Table */}
-      <div className="overflow-x-auto">
-        <AssetsTable
-          assets={filteredAssets()}
-          sortConfig={sortConfig}
-          setSortConfig={setSortConfig}
-          onRowClick={setSelectedAsset}
-        />
-
-        {selectedAsset && (
-          <AssetModal
-            asset={selectedAsset}
-            onClose={() => setSelectedAsset(null)}
-          />
-        )}
-      </div>
+      )}
     </div>
   );
 };
