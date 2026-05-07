@@ -15,13 +15,17 @@ const Dashboard = () => {
 
   useEffect(() => {
     let interval;
+
     const fetchData = async () => {
       try {
-        const portfolioResponse = await getPortfolio();
-        setPortfolio(portfolioResponse.data.data);
+        const [portfolioResponse, dashboardResponse] = await Promise.all([
+          getPortfolio(),
+          getDashboard(),
+        ]);
 
-        const dashboardResponse = await getDashboard();
-        setDashboard(dashboardResponse.data.data);
+        // ✅ FIX: no extra .data.data
+        setPortfolio(portfolioResponse.data);
+        setDashboard(dashboardResponse.data);
       } catch (err) {
         console.error(err);
         setError("Failed to fetch data. Please try again later.");
@@ -32,6 +36,7 @@ const Dashboard = () => {
 
     fetchData();
     interval = setInterval(fetchData, 30000);
+
     return () => clearInterval(interval);
   }, []);
 
@@ -40,22 +45,26 @@ const Dashboard = () => {
     return <Error message={error} onRetry={() => window.location.reload()} />;
 
   return (
-    <div className="p-4 sm:p-6 space-y-6 bg-gray-50 dark:bg-gray-900 transition-colors duration-300 min-h-screen">
-      {/* Top Section: Gainers/Losers + News + Alerts */}
+    <div className="p-4 sm:p-6 space-y-6 bg-gray-50 dark:bg-gray-900 min-h-screen">
       <div className="flex flex-col lg:flex-row gap-6">
         <div className="lg:w-1/2 space-y-6">
-          <TopGainersLosers data={dashboard} />
+          <TopGainersLosers
+            data={{
+              topGainers:
+                dashboard?.topStocks?.filter((s) => s.changePercent > 0) || [],
+              topLosers:
+                dashboard?.topStocks?.filter((s) => s.changePercent < 0) || [],
+            }}
+          />
         </div>
+
         <div className="lg:w-1/2 space-y-6">
-          <RecentNews news={dashboard.recentNews} />
-          <ActiveAlerts alerts={dashboard.activeAlerts} />
+          <RecentNews news={dashboard?.recentNews || []} />
+          <ActiveAlerts alerts={dashboard?.alerts || []} />
         </div>
       </div>
 
-      {/* Portfolio */}
-      <div className="w-full">
-        <PortfolioCard portfolio={portfolio} />
-      </div>
+      <PortfolioCard portfolio={portfolio?.portfolio || portfolio} />
     </div>
   );
 };
